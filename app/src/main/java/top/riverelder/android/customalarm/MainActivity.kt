@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,6 +23,7 @@ import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,16 +45,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AlarmList(alarms: List<Alarm>) {
     LazyColumn {
-        items(alarms) {
+        itemsIndexed(alarms) { index, alarm ->
             val time = Date()
             Row {
+                Text(text = "No.$index")
                 Column {
                     Row {
                         Text(text = "名称：")
-                        Text(text = it.name)
+                        Text(text = alarm.name)
                     }
                     Row {
-                        val nextRingTime = it.followingRingTime(time)
+                        val nextRingTime = alarm.followingRingTime(time)
                         Text(text = "下次响铃：")
                         Text(text = if (nextRingTime != null) DATE_TIME_FORMAT.format(nextRingTime) else "N/A")
                     }
@@ -61,7 +65,7 @@ fun AlarmList(alarms: List<Alarm>) {
                     }
                     Row {
                         Text(text = "是否该响铃：")
-                        Text(text = if (it.shouldRing(time)) "是" else "否")
+                        Text(text = if (alarm.shouldRing(time)) "是" else "否")
                     }
                 }
             }
@@ -85,19 +89,29 @@ val TIME_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
 )
 @Composable
 fun DefaultPreview() {
+    val alarms: MutableList<Alarm> = ArrayList()
+    alarms.add(createAlarm())
+
     CustomAlarmTheme {
-        val currentTime = Date()
-        val calendar = Calendar.getInstance()
-        calendar.time = currentTime
-        calendar.add(Calendar.SECOND, 1)
-        val time = calendar.time
+
         Column {
-            AlarmList(listOf(
-                DailyAlarm().also {
-                    it.name = "起床闹钟"
-                    it.dailyTime = time
-                }
-            ))
+            AlarmList(alarms)
+            Button(onClick = { alarms.add(createAlarm()) }) {
+                Text(text = "增加闹钟")
+            }
         }
+    }
+}
+
+fun createAlarm(): Alarm {
+    val currentTime = Date()
+    val calendar = Calendar.getInstance()
+    calendar.time = currentTime
+    calendar.add(Calendar.SECOND, 1)
+    val time = calendar.time
+
+    return DailyAlarm().also {
+        it.name = "起床闹钟"
+        it.dailyTime = time
     }
 }
