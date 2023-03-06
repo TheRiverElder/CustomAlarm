@@ -1,18 +1,107 @@
 package top.riverelder.android.customalarm.alarm.impl
 
+import android.app.TimePickerDialog
+import android.content.Context
 import android.os.Bundle
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.core.os.bundleOf
+import top.riverelder.android.customalarm.FONT_FAMILY_SMILEY_SANS
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.AlarmConfigurationMetadata
 import top.riverelder.android.customalarm.alarm.AlarmConfigurationMetadataItem
+import top.riverelder.android.customalarm.alarm.AlarmType
+import java.text.SimpleDateFormat
 import java.util.*
-import java.util.Calendar.HOUR_OF_DAY
-import java.util.Calendar.MINUTE
-import java.util.Calendar.YEAR
-import java.util.Calendar.MONTH
-import java.util.Calendar.DATE
+import java.util.Calendar.*
 
-class DailyAlarm : Alarm {
+object DailyAlarmType : AlarmType<DailyAlarm> {
+
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINA)
+
+    override val id: String
+        get() = "daily"
+
+    override fun create(initialTime: Date): DailyAlarm = DailyAlarm()
+
+    @Composable
+    override fun AlarmConfigurationView(context: Context, bundle: Bundle, onChange: (Bundle) -> Unit) {
+
+        val previousTime = Calendar.getInstance().also { Date(bundle.getLong("dailyTime", Date().time)) }
+        val previousDelayMinutes = bundle.getInt("delayMinutes", 1)
+
+        var dailyTimeHour by remember { mutableStateOf(previousTime.get((HOUR))) }
+        var dailyTimeMinute by remember { mutableStateOf(previousTime.get(MINUTE)) }
+        var delayMinutes by remember { mutableStateOf(previousDelayMinutes) }
+        var delayMinutesString by remember { mutableStateOf(previousDelayMinutes.toString()) }
+
+        val timePickerDialog = TimePickerDialog(context, { _, hourOfDay, minute ->
+            dailyTimeHour = hourOfDay
+            dailyTimeMinute = minute
+        }, dailyTimeHour, dailyTimeMinute, true)
+
+        fun getTime(): Date =
+            Calendar.getInstance().also { it.set(0, 0, 0, dailyTimeHour, dailyTimeMinute, 0) }.time
+
+        Column {
+            Column(Modifier.weight(1f)) {
+                Row {
+                    Text(text = "当前定时：", modifier = Modifier.align(CenterVertically))
+                    Text(
+                        text = timeFormat.format(getTime()),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = FONT_FAMILY_SMILEY_SANS,
+                        modifier = Modifier.weight(1f).align(CenterVertically),
+                    )
+                    Button(
+                        modifier = Modifier.wrapContentSize().align(CenterVertically),
+                        onClick = { timePickerDialog.show() },
+                    ) {
+                        Text(text = "改变定时")
+                    }
+                }
+                Row {
+                    Text(text = "允许延迟：", modifier = Modifier.align(CenterVertically))
+                    BasicTextField(
+                        value = delayMinutesString,
+                        onValueChange = { delayMinutesString = it },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        textStyle = TextStyle(fontSize = 5.em, fontFamily = FONT_FAMILY_SMILEY_SANS),
+                        modifier = Modifier.align(CenterVertically),
+                    )
+                }
+            }
+            Button(
+                modifier = Modifier.align(CenterHorizontally),
+                onClick = { onChange(bundleOf(
+                    "dailyTime" to getTime().time,
+                    "delayMinutes" to try { delayMinutesString.toInt() } catch (ignored: Exception) { previousDelayMinutes },
+                )) }
+            ) {
+                Text(text = "确认")
+            }
+        }
+    }
+
+}
+
+class DailyAlarm : Alarm<DailyAlarm> {
+
+    override val type: AlarmType<DailyAlarm>
+        get() = DailyAlarmType
 
     override var name: String = "每日闹铃"
 

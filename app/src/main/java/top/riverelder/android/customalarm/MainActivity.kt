@@ -1,72 +1,121 @@
 package top.riverelder.android.customalarm
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.impl.DailyAlarm
 import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            var alarms by remember { mutableStateOf(ArrayList<Alarm<*>>().also { it.add(createAlarm()) }) }
+
             CustomAlarmTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    Greeting("Android")
+                    AlarmList(
+                        alarms,
+                        onClickAdd = {
+                            alarms = ArrayList(alarms).also { it.add(createAlarm()) }
+                        },
+                        onClickAlarm = {
+                            val intent = Intent(this, AlarmConfigurationActivity::class.java)
+                            startActivity(intent)
+                        }
+                    )
                 }
             }
         }
     }
 }
 
+val FONT_FAMILY_SMILEY_SANS = FontFamily(
+    Font(R.font.smiley_sans_oblique, FontWeight.Normal)
+)
+
 @Composable
-fun AlarmList(alarms: List<Alarm>) {
-    LazyColumn {
-        itemsIndexed(alarms) { index, alarm ->
-            val time = Date()
-            Row {
-                Text(text = "No.$index")
-                Column {
-                    Row {
-                        Text(text = "名称：")
-                        Text(text = alarm.name)
+fun AlarmList(alarms: List<Alarm<*>>, onClickAdd: () -> Unit, onClickAlarm: (Alarm<*>) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        val time = Date()
+        Row {
+            Text(text = "当前时间：")
+            Text(text = DATE_TIME_FORMAT.format(time))
+        }
+        Button(onClick = onClickAdd) {
+            Text(text = "增加闹钟")
+        }
+        Text(text = "共${alarms.size}个闹钟")
+        LazyColumn(modifier = Modifier.fillMaxWidth().padding(5.dp, 2.dp)) {
+            items(alarms) { alarm ->
+                Row(Modifier.clickable { onClickAlarm(alarm) }) {
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "alarm",
+                        modifier = Modifier
+                            .align(CenterVertically)
+                            .padding(5.dp),
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Row {
+                            Text(
+                                text = alarm.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontFamily = FONT_FAMILY_SMILEY_SANS,
+                            )
+                        }
+                        Row {
+                            val nextRingTime = alarm.followingRingTime(time)
+                            Text(
+                                text = "下次响铃：",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray,
+                            )
+                            Text(
+                                text = if (nextRingTime != null) DATE_TIME_FORMAT.format(nextRingTime) else "N/A",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray,
+                            )
+                        }
+//                        Row {
+//                            Text(text = "是否该响铃：")
+//                            Text(text = if (alarm.shouldRing(time)) "是" else "否")
+//                        }
                     }
-                    Row {
-                        val nextRingTime = alarm.followingRingTime(time)
-                        Text(text = "下次响铃：")
-                        Text(text = if (nextRingTime != null) DATE_TIME_FORMAT.format(nextRingTime) else "N/A")
-                    }
-                    Row {
-                        Text(text = "当前时间：")
-                        Text(text = DATE_TIME_FORMAT.format(time))
-                    }
-                    Row {
-                        Text(text = "是否该响铃：")
-                        Text(text = if (alarm.shouldRing(time)) "是" else "否")
-                    }
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "alarm",
+                        modifier = Modifier
+                            .align(CenterVertically)
+                            .padding(5.dp)
+                            .clickable { onClickAlarm(alarm) },
+                    )
                 }
             }
         }
@@ -89,21 +138,25 @@ val TIME_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
 )
 @Composable
 fun DefaultPreview() {
-    val alarms: MutableList<Alarm> = ArrayList()
-    alarms.add(createAlarm())
+    var alarms by remember { mutableStateOf(ArrayList<Alarm<*>>().also { it.add(createAlarm()) }) }
 
     CustomAlarmTheme {
-
-        Column {
-            AlarmList(alarms)
-            Button(onClick = { alarms.add(createAlarm()) }) {
-                Text(text = "增加闹钟")
-            }
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+        ) {
+            AlarmList(
+                alarms,
+                onClickAdd = {
+                    alarms = ArrayList(alarms).also { it.add(createAlarm()) }
+                },
+                onClickAlarm = {  }
+            )
         }
     }
 }
 
-fun createAlarm(): Alarm {
+fun createAlarm(): Alarm<*> {
     val currentTime = Date()
     val calendar = Calendar.getInstance()
     calendar.time = currentTime
