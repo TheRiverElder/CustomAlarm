@@ -28,7 +28,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Calendar.*
 
-object DailyAlarmType : AlarmType<DailyAlarm> {
+object DailyAlarmType : AlarmType {
 
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINA)
 
@@ -98,9 +98,9 @@ object DailyAlarmType : AlarmType<DailyAlarm> {
 
 }
 
-class DailyAlarm : Alarm<DailyAlarm> {
+class DailyAlarm : Alarm {
 
-    override val type: AlarmType<DailyAlarm>
+    override val type: AlarmType
         get() = DailyAlarmType
 
     override var name: String = "每日闹铃"

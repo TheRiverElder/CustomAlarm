@@ -1,8 +1,14 @@
 package top.riverelder.android.customalarm
 
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -28,11 +34,13 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        startAlarmService()
         setContent {
-            var alarms by remember { mutableStateOf(ArrayList<Alarm<*>>().also { it.add(createAlarm()) }) }
+            var alarms: List<Alarm> by remember { mutableStateOf(ArrayList<Alarm>().also { it.add(createAlarm()) }) }
 
             CustomAlarmTheme {
                 // A surface container using the 'background' color from the theme
@@ -54,6 +62,35 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private var serviceName: ComponentName? = null
+    private var service: AlarmService? = null
+    private val serviceConnection = AlarmServiceConnection()
+
+    private fun startAlarmService() {
+        val intent = Intent(this, AlarmService::class.java)
+        startService(intent)
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    inner class AlarmServiceConnection : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            if (binder !is AlarmService.AlarmServiceBinder) return
+
+            Toast.makeText(this@MainActivity, "连接到服务", Toast.LENGTH_SHORT).show()
+            service = binder.service
+            serviceName = name
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            if (serviceName == null || service == null || serviceName != name) return
+
+            Toast.makeText(this@MainActivity, "断开连接服务", Toast.LENGTH_SHORT).show()
+            service = null
+            serviceName = null
+        }
+
+    }
 }
 
 val FONT_FAMILY_SMILEY_SANS = FontFamily(
@@ -61,7 +98,7 @@ val FONT_FAMILY_SMILEY_SANS = FontFamily(
 )
 
 @Composable
-fun AlarmList(alarms: List<Alarm<*>>, onClickAdd: () -> Unit, onClickAlarm: (Alarm<*>) -> Unit) {
+fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         val time = Date()
         Row {
@@ -72,7 +109,9 @@ fun AlarmList(alarms: List<Alarm<*>>, onClickAdd: () -> Unit, onClickAlarm: (Ala
             Text(text = "增加闹钟")
         }
         Text(text = "共${alarms.size}个闹钟")
-        LazyColumn(modifier = Modifier.fillMaxWidth().padding(5.dp, 2.dp)) {
+        LazyColumn(modifier = Modifier
+            .fillMaxWidth()
+            .padding(5.dp, 2.dp)) {
             items(alarms) { alarm ->
                 Row(Modifier.clickable { onClickAlarm(alarm) }) {
                     Icon(
@@ -138,7 +177,7 @@ val TIME_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
 )
 @Composable
 fun DefaultPreview() {
-    var alarms by remember { mutableStateOf(ArrayList<Alarm<*>>().also { it.add(createAlarm()) }) }
+    var alarms by remember { mutableStateOf(ArrayList<Alarm>().also { it.add(createAlarm()) }) }
 
     CustomAlarmTheme {
         Surface(
@@ -156,7 +195,7 @@ fun DefaultPreview() {
     }
 }
 
-fun createAlarm(): Alarm<*> {
+fun createAlarm(): Alarm {
     val currentTime = Date()
     val calendar = Calendar.getInstance()
     calendar.time = currentTime

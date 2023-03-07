@@ -4,12 +4,12 @@ import android.os.Bundle
 import androidx.annotation.IntRange
 import java.util.Date
 
-interface Alarm<T : Alarm<T>> {
+interface Alarm {
 
     /**
      * 该闹铃的类型，其包括了如何渲染等
      */
-    val type: AlarmType<T>
+    val type: AlarmType
 
     /**
      * 该闹铃的名称

@@ -5,7 +5,7 @@ import android.os.Bundle
 import androidx.compose.runtime.Composable
 import java.util.*
 
-interface AlarmType<T : Alarm<T>> {
+interface AlarmType {
     /**
      * 唯一标识符，唯一确定以一个实例
      */
@@ -16,7 +16,7 @@ interface AlarmType<T : Alarm<T>> {
      * @param initialTime 用于初始化的时间参数，一般是当前时间
      * @return 返回创建好的闹铃
      */
-    fun create(initialTime: Date): T
+    fun create(initialTime: Date): Alarm
 
 
     /**
