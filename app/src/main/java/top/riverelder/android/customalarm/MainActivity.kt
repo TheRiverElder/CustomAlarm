@@ -40,9 +40,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startAlarmService()
+
+        var alarmManagerListener: ((Alarm) -> Unit)? = null
+
         setContent {
             var alarms: List<Alarm> by remember { mutableStateOf(CustomAlarmManager.getAlarms()) }
 
+            var listener = alarmManagerListener
+            if (listener == null) {
+                listener = { alarms = CustomAlarmManager.getAlarms() }
+                alarmManagerListener = listener
+            }
+
+            CustomAlarmManager.onAlarmAddedListeners.add(listener)
+            CustomAlarmManager.onAlarmRemovedListeners.add(listener)
+            CustomAlarmManager.onAlarmUpdatedListeners.add(listener)
 
             CustomAlarmTheme {
                 // A surface container using the 'background' color from the theme
@@ -54,7 +66,6 @@ class MainActivity : ComponentActivity() {
                         alarms,
                         onClickAdd = {
                             CustomAlarmManager.addAlarm(createAlarm())
-                            alarms = CustomAlarmManager.getAlarms()
                         },
                         onClickAlarm = {
                             val index = it.first

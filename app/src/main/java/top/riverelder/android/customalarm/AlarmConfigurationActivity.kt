@@ -22,6 +22,7 @@ import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
 
 class AlarmConfigurationActivity : ComponentActivity() {

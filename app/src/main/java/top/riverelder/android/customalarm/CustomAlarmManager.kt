@@ -8,9 +8,9 @@ import kotlin.collections.HashSet
 object CustomAlarmManager {
     private val alarms: MutableList<Alarm> = ArrayList()
 
-    public val onAlarmAddedListeners: Set<(Alarm) -> Unit> = HashSet()
-    public val onAlarmRemovedListeners: Set<(Alarm) -> Unit> = HashSet()
-    public val onAlarmUpdatedListeners: Set<(Alarm) -> Unit> = HashSet()
+    public val onAlarmAddedListeners: MutableSet<(Alarm) -> Unit> = HashSet()
+    public val onAlarmRemovedListeners: MutableSet<(Alarm) -> Unit> = HashSet()
+    public val onAlarmUpdatedListeners: MutableSet<(Alarm) -> Unit> = HashSet()
 
     fun addAlarm(alarm: Alarm) {
         if (!alarms.add(alarm)) return
