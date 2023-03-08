@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -40,7 +41,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         startAlarmService()
         setContent {
-            var alarms: List<Alarm> by remember { mutableStateOf(ArrayList<Alarm>().also { it.add(createAlarm()) }) }
+            var alarms: List<Alarm> by remember { mutableStateOf(CustomAlarmManager.getAlarms()) }
+
 
             CustomAlarmTheme {
                 // A surface container using the 'background' color from the theme
@@ -51,10 +53,13 @@ class MainActivity : ComponentActivity() {
                     AlarmList(
                         alarms,
                         onClickAdd = {
-                            alarms = ArrayList(alarms).also { it.add(createAlarm()) }
+                            CustomAlarmManager.addAlarm(createAlarm())
+                            alarms = CustomAlarmManager.getAlarms()
                         },
                         onClickAlarm = {
+                            val index = it.first
                             val intent = Intent(this, AlarmConfigurationActivity::class.java)
+                            intent.putExtra("index", index)
                             startActivity(intent)
                         }
                     )
@@ -98,7 +103,7 @@ val FONT_FAMILY_SMILEY_SANS = FontFamily(
 )
 
 @Composable
-fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm) -> Unit) {
+fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Pair<Int, Alarm>) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         val time = Date()
         Row {
@@ -112,8 +117,8 @@ fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm)
         LazyColumn(modifier = Modifier
             .fillMaxWidth()
             .padding(5.dp, 2.dp)) {
-            items(alarms) { alarm ->
-                Row(Modifier.clickable { onClickAlarm(alarm) }) {
+            itemsIndexed(alarms) { index, alarm ->
+                Row(Modifier.clickable { onClickAlarm(Pair(index, alarm)) }) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = "alarm",
@@ -143,14 +148,6 @@ fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm)
                             )
                         }
                     }
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = "alarm",
-                        modifier = Modifier
-                            .align(CenterVertically)
-                            .padding(5.dp)
-                            .clickable { onClickAlarm(alarm) },
-                    )
                 }
             }
         }

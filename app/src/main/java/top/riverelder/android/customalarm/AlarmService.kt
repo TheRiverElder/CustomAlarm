@@ -39,6 +39,11 @@ class AlarmService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        releaseRunning()
+    }
+
     private fun protectRunning() {
         val channel = NotificationChannel(packageName, "ForegroundService", NotificationManager.IMPORTANCE_NONE)
         channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
@@ -95,7 +100,7 @@ class AlarmService : Service() {
             val action = intent?.action ?: return
             if (action == Intent.ACTION_TIME_TICK) {
                 onMinute()
-                Log.d("ON_MINUTE", "现在是${DateFormat.getTimeInstance(DateFormat.FULL, Locale.CHINA).format(Date())}，又一分钟了！")
+//                Log.d("ON_MINUTE", "现在是${DateFormat.getTimeInstance(DateFormat.FULL, Locale.CHINA).format(Date())}，又一分钟了！")
             }
         }
     }

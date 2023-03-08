@@ -6,23 +6,20 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.core.os.bundleOf
 import top.riverelder.android.customalarm.*
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.AlarmType
 import top.riverelder.android.customalarm.ui.components.DigitInput
-import java.lang.Integer.parseInt
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Calendar.*
@@ -65,30 +62,32 @@ object DailyAlarmType : AlarmType {
             notifyChange(dailyTimeHour = hourOfDay, dailyTimeMinute = minute)
         }, previousTimeHour, previousTimeMinute, true)
 
-        Column {
-            Row(verticalAlignment = CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                 Text(text = "当前定时：", fontSize = 5.em)
                 Text(
                     text = timeFormat.format(previousTime.time),
                     style = MaterialTheme.typography.titleLarge,
                     fontFamily = FONT_FAMILY_SMILEY_SANS,
                     fontSize = 7.em,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).padding(vertical = 0.dp),
                 )
-                Button(modifier = Modifier.wrapContentSize(), onClick = { timePickerDialog.show() }) {
-                    Text(text = "改变定时")
-                }
             }
-            Row(verticalAlignment = CenterVertically) {
-                Text(text = "允许延迟：", fontSize = 5.em)
-                DigitInput(
-                    value = previousMaxDelayMinutes.toLong(),
-                    onValueChange = { notifyChange(maxDelayMinutes = it.toInt()) },
-                    textStyle = TextStyle(fontSize = 7.em, fontFamily = FONT_FAMILY_SMILEY_SANS)
-                )
-                Text(text = "分钟")
+            Button(modifier = Modifier.wrapContentSize(), onClick = { timePickerDialog.show() }) {
+                Text(text = "改变定时")
             }
         }
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(text = "允许延迟：", fontSize = 5.em)
+            DigitInput(
+                value = previousMaxDelayMinutes.toLong(),
+                onValueChange = { notifyChange(maxDelayMinutes = it.toInt()) },
+                textStyle = TextStyle(fontSize = 7.em, fontFamily = FONT_FAMILY_SMILEY_SANS),
+                modifier = Modifier.padding(vertical = 0.dp),
+            )
+            Text(text = "分钟")
+        }
+
     }
 
 

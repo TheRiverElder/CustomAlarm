@@ -29,6 +29,8 @@ object CustomAlarmManager {
 
     fun getAlarms(): List<Alarm> = alarms.slice(0 until alarms.size)
 
+    fun getAlarm(index: Int): Alarm? = alarms.getOrNull(index)
+
     fun getNextRing(currentTime: Date, maxDelayMinutes: Int): Pair<Alarm, Date>? {
         var nextRingTime: Date? = null
         var nextAlarm: Alarm? = null
