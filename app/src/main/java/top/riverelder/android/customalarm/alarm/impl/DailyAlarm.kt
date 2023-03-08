@@ -3,6 +3,7 @@ package top.riverelder.android.customalarm.alarm.impl
 import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.core.os.bundleOf
+import top.riverelder.android.customalarm.AlarmService
 import top.riverelder.android.customalarm.FONT_FAMILY_SMILEY_SANS
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.AlarmConfigurationMetadata
@@ -64,10 +66,14 @@ object DailyAlarmType : AlarmType {
                         text = timeFormat.format(getTime()),
                         style = MaterialTheme.typography.titleLarge,
                         fontFamily = FONT_FAMILY_SMILEY_SANS,
-                        modifier = Modifier.weight(1f).align(CenterVertically),
+                        modifier = Modifier
+                            .weight(1f)
+                            .align(CenterVertically),
                     )
                     Button(
-                        modifier = Modifier.wrapContentSize().align(CenterVertically),
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .align(CenterVertically),
                         onClick = { timePickerDialog.show() },
                     ) {
                         Text(text = "改变定时")
@@ -104,6 +110,8 @@ class DailyAlarm : Alarm {
         get() = DailyAlarmType
 
     override var name: String = "每日闹铃"
+
+    override var scheduled: Boolean = false
 
     var dailyTime: Date = Date(0)
     var delayMinutes: Int = 1
@@ -154,6 +162,10 @@ class DailyAlarm : Alarm {
         val checkerCalendar = previousRingCalendar(time) // 此时checkerCalendar必before queryCalendar
         checkerCalendar.add(MINUTE, delayMinutes)
         return checkerCalendar.after(queryCalendar)
+    }
+
+    override fun ring(service: AlarmService) {
+        Toast.makeText(service, "醒醒！", Toast.LENGTH_SHORT).show()
     }
 
     override var properties: Bundle

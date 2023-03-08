@@ -2,6 +2,7 @@ package top.riverelder.android.customalarm.alarm
 
 import android.os.Bundle
 import androidx.annotation.IntRange
+import top.riverelder.android.customalarm.AlarmService
 import java.util.Date
 
 interface Alarm {
@@ -15,6 +16,11 @@ interface Alarm {
      * 该闹铃的名称
      */
     var name: String
+
+    /**
+     * 标记该闹铃已经被计划响铃，响铃后设为false等待下一次计划
+     */
+    var scheduled: Boolean
 
     /**
      * 通过给定时间（一般是当前时间）进行设置
@@ -43,6 +49,11 @@ interface Alarm {
      * @return 是否应该响铃
      */
     fun shouldRing(time: Date): Boolean
+
+    /**
+     * 实行响铃行为，后期会加入复杂的响铃行为，为了方便，暂不使用组合，而是继承
+     */
+    fun ring(service: AlarmService)
 
     /**
      * 用于设置获取读取设置，不一定真的有这一个field，只是定义了getter和setter
