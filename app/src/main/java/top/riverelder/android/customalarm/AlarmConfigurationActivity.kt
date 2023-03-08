@@ -6,6 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
 
@@ -21,10 +25,14 @@ class AlarmConfigurationActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
+                    var properties by remember { mutableStateOf(alarm.properties) }
+
+
+
                     alarm.type.AlarmConfigurationView(
                         context = this,
-                        bundle = alarm.properties,
-                        onChange = { alarm.properties = it }
+                        bundle = properties,
+                        onChange = { properties = it }
                     )
                 }
             }

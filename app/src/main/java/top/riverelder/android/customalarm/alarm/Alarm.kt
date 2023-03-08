@@ -61,8 +61,4 @@ interface Alarm {
      */
     var properties: Bundle
 
-    /**
-     * 告诉UI要如何渲染设置页面
-     */
-    val configurationMetadata: AlarmConfigurationMetadata
 }

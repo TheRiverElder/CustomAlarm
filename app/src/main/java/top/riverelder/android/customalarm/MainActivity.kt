@@ -142,10 +142,6 @@ fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm)
                                 color = Color.Gray,
                             )
                         }
-//                        Row {
-//                            Text(text = "是否该响铃：")
-//                            Text(text = if (alarm.shouldRing(time)) "是" else "否")
-//                        }
                     }
                     Icon(
                         Icons.Filled.Star,
@@ -159,11 +155,6 @@ fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Alarm)
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello, Dear ${name}!")
 }
 
 val DATE_TIME_FORMAT: DateFormat = SimpleDateFormat("yyyy年MM月dd日EHH:mm:ss", Locale.CHINA)
