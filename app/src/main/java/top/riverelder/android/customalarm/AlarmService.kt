@@ -10,10 +10,16 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
+import top.riverelder.android.customalarm.alarm.Alarm
+import java.sql.Time
 import java.text.DateFormat
 import java.util.*
+import java.util.Calendar.YEAR
+import kotlin.collections.HashSet
 import kotlin.concurrent.timerTask
 
 
@@ -28,9 +34,19 @@ class AlarmService : Service() {
         return AlarmServiceBinder()
     }
 
+    private val alarmManagerMutatedListener: (Alarm) -> Unit = {
+        enqueuedTimerTasks.forEach { it.cancel() }
+        enqueuedTimerTasks.clear()
+        scheduleNextRing()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         protectRunning()
         scheduleNextRing()
+
+        CustomAlarmManager.onAlarmUpdatedListeners.add(alarmManagerMutatedListener)
+        CustomAlarmManager.onAlarmAddedListeners.add(alarmManagerMutatedListener)
+        CustomAlarmManager.onAlarmRemovedListeners.add(alarmManagerMutatedListener)
 
         val filter = IntentFilter() //创建意图过滤器对象
         filter.addAction(Intent.ACTION_TIME_TICK) //为接收器指定action，使之用于接收同action的广播
@@ -42,6 +58,10 @@ class AlarmService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         releaseRunning()
+
+        CustomAlarmManager.onAlarmUpdatedListeners.remove(alarmManagerMutatedListener)
+        CustomAlarmManager.onAlarmAddedListeners.remove(alarmManagerMutatedListener)
+        CustomAlarmManager.onAlarmRemovedListeners.remove(alarmManagerMutatedListener)
     }
 
     private fun protectRunning() {
@@ -68,10 +88,11 @@ class AlarmService : Service() {
         scheduleNextRing()
     }
 
-    private val timer = Timer()
+    private var timer = Timer()
+    private var enqueuedTimerTasks = HashSet<TimerTask>()
 
     fun scheduleNextRing() {
-        val currentTime = Date()
+        val currentTime = currentTime()
         val nextRing = CustomAlarmManager.getNextRing(currentTime, 1) ?: return
 
         val nextAlarm = nextRing.first
@@ -80,11 +101,15 @@ class AlarmService : Service() {
         synchronized(this) {
             nextAlarm.scheduled = true
 
-            timer.schedule(timerTask {
-                nextAlarm.scheduled = false
+            Log.d("nextRingTime", "$nextRingTime == ${nextRingTime.time / (1000L * 60 * 60 * 24 * 365)} == year ${nextRingTime.calendar.get(YEAR)}")
+
+            val timerTask = timerTask {
+                enqueuedTimerTasks.remove(this)
                 ringAlarms(Date())
                 scheduleNextRing()
-            }, nextRingTime)
+            }
+            enqueuedTimerTasks.add(timerTask)
+            timer.schedule(timerTask, nextRingTime)
         }
 
     }
@@ -92,7 +117,10 @@ class AlarmService : Service() {
     fun ringAlarms(time: Date) {
         CustomAlarmManager.getAlarms()
             .filter { it.shouldRing(time) }
-            .forEach { it.ring(this) }
+            .forEach { Handler(Looper.getMainLooper()).post {
+                it.ring(this)
+                it.scheduled = false
+            } }
     }
 
     inner class MinuteBroadcastReceiver : BroadcastReceiver() {

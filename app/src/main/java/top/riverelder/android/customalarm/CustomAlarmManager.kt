@@ -38,7 +38,7 @@ object CustomAlarmManager {
             if (alarm.scheduled) continue
 
             val ringTime = alarm.followingRingTime(currentTime)
-            if (ringTime == null || (ringTime.time - currentTime.time) > (maxDelayMinutes * 60 * 1000)) continue
+            if (ringTime == null || (ringTime.time - currentTime.time) > (1000L * 60 * maxDelayMinutes)) continue
 
             if (nextRingTime == null || ringTime.before(nextRingTime)) {
                 nextRingTime = ringTime
