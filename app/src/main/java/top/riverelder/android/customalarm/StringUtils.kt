@@ -5,46 +5,32 @@ import java.lang.Integer.parseInt
 
 val REGEX = Regex("\\$\\{(\\w+)?\\}")
 
-fun String.formatBy(map: Map<String, Any>): String {
-    val defaultValue = if (map.isNotEmpty()) map.entries.first().value else null
+fun String.formatBy(map: Map<String, Any>): String = formatBy(
+    { map.getOrDefault(it, null) },
+    if (map.isNotEmpty()) map.entries.first().value else null,
+)
+
+fun String.formatBy(list: List<Any>): String = formatBy(
+    { try { parseInt(it) } catch (ignored: Exception) { null } },
+    if (list.isNotEmpty()) list.first() else null,
+)
+
+fun String.formatBy(argument: Any): String =
+    formatBy({ if (it == "0") argument else null }, argument)
+
+fun String.formatBy(getArg: (String) -> Any?, defaultArg: Any?): String {
     var lastIndex = 0
     val builder = StringBuilder()
     for (piece in REGEX.findAll(this, 0)) {
-        val group = piece.groups[1] ?: continue
         builder.append(substring(lastIndex, piece.range.first))
         lastIndex = piece.range.last + 1
-        builder.append(map.getOrDefault(group.value, defaultValue ?: piece.value))
-    }
-    builder.append(substring(lastIndex))
-    return builder.toString()
-}
 
-fun String.formatBy(list: List<Any>): String {
-    val defaultValue = if (list.isNotEmpty()) list.first() else null
-    var lastIndex = 0
-    val builder = StringBuilder()
-    for (piece in REGEX.findAll(this, 0)) {
-        val group = piece.groups[1] ?: continue
-        val index = try {
-            parseInt(group.value)
-        } catch (ignored: Exception) {
+        val group = piece.groups[1]
+        if (group == null) {
+            builder.append(defaultArg ?: piece.value)
             continue
         }
-        builder.append(substring(lastIndex, piece.range.first))
-        lastIndex = piece.range.last + 1
-        builder.append(list.getOrNull(index) ?: (defaultValue ?: piece.value))
-    }
-    builder.append(substring(lastIndex))
-    return builder.toString()
-}
-
-fun String.formatBy(argument: Any): String {
-    var lastIndex = 0
-    val builder = StringBuilder()
-    for (piece in REGEX.findAll(this, 0)) {
-        builder.append(substring(lastIndex, piece.range.first))
-        lastIndex = piece.range.last + 1
-        builder.append(argument)
+        builder.append(getArg(group.value) ?: piece.value)
     }
     builder.append(substring(lastIndex))
     return builder.toString()
