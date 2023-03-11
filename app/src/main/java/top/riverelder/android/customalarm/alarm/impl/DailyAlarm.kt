@@ -108,35 +108,56 @@ class DailyAlarm : Alarm {
     var maxDelayMinutes: Int = 1
 
     override fun setByTime(time: Date) {
-        val calendar = Calendar.getInstance()
-        calendar.time = time
-        val hour = calendar.get(HOUR_OF_DAY)
-        val minute = calendar.get(MINUTE)
-        dailyTime = getTime(hour = hour, minute = minute)
+        val calendar = time.calendar
+        dailyTime = getTime(hour = calendar.get(HOUR_OF_DAY), minute = calendar.get(MINUTE))
     }
 
-    private fun getCalendarInDate(date: Date): Calendar =
-        getCalendarInDate(Calendar.getInstance().also { it.time = date })
-
     private fun getCalendarInDate(dateCalendar: Calendar): Calendar {
-        val calendar = dailyTime.calendar
-        calendar.set(dateCalendar.get(YEAR), dateCalendar.get(MONTH), dateCalendar.get(DATE))
-        return calendar
+        val dailyCalendar = dailyTime.calendar
+        return getTime(
+            year = dateCalendar.get(YEAR),
+            month = dateCalendar.get(MONTH),
+            date = dateCalendar.get(DATE),
+            hour = dailyCalendar.get(HOUR_OF_DAY),
+            minute = dailyCalendar.get(MINUTE),
+        ).calendar
     }
 
     override fun followingRingTime(time: Date, order: Int): Date? {
+        /***
+         *      ┌─┐       ┌─┐
+         *   ┌──┘ ┴───────┘ ┴──┐
+         *   │                 │
+         *   │       ───       │
+         *   │  ─┬┘       └┬─  │
+         *   │                 │
+         *   │       ─┴─       │
+         *   │                 │
+         *   └───┐         ┌───┘
+         *       │         │
+         *       │         │
+         *       │         │
+         *       │         └──────────────┐
+         *       │                        │
+         *       │                        ├─┐
+         *       │                        ┌─┘
+         *       │                        │
+         *       └─┐  ┐  ┌───────┬──┐  ┌──┘
+         *         │ ─┤ ─┤       │ ─┤ ─┤
+         *         └──┴──┘       └──┴──┘
+         *                神兽保佑
+         *               代码无BUG!
+         */
 
         if (order > 0) throw Exception("Cannot supply more than one day")
         val queryCalendar = time.calendar
         // 将检查时刻设为与被检查时刻同一天
         val checkerCalendar = getCalendarInDate(queryCalendar)
-        Log.d("followingRingTime", "compare: queryCalendar ${queryCalendar.time}, checkerCalendar ${checkerCalendar.time}")
+//        Log.d("followingRingTime", "compare: queryCalendar ${queryCalendar.time}, checkerCalendar ${checkerCalendar.time}")
         // 如果检查时刻在被检查时刻之后，则说明是在当日还有一次响铃机会
-        if (checkerCalendar.after(queryCalendar)) return checkerCalendar.time
+        if (checkerCalendar.time.after(queryCalendar.time)) return checkerCalendar.time
         // 否则只能在次日响铃
-        Log.d("checkerCalendar", "before: ${checkerCalendar.time}")
         checkerCalendar.add(DAY_OF_MONTH, 1)
-        Log.d("checkerCalendar", "after: ${checkerCalendar.time}")
         return checkerCalendar.time
     }
 
@@ -147,7 +168,7 @@ class DailyAlarm : Alarm {
         // 将检查时刻设为与被检查时刻同一天
         val checkerCalendar = getCalendarInDate(queryCalendar)
         // 如果检查时刻在被检查时刻之前或者同时，则说明是在当日还有一次响铃机会
-        if (!checkerCalendar.after(queryCalendar)) return checkerCalendar
+        if (!checkerCalendar.time.after(queryCalendar.time)) return checkerCalendar
         // 否则说明上一个应该响铃的时刻是在前一天
         checkerCalendar.add(DATE, -1)
         return checkerCalendar
@@ -157,7 +178,7 @@ class DailyAlarm : Alarm {
         val queryCalendar = time.calendar
         val checkerCalendar = previousRingCalendar(time) // 此时checkerCalendar必before queryCalendar
         checkerCalendar.add(MINUTE, maxDelayMinutes)
-        return checkerCalendar.after(queryCalendar)
+        return checkerCalendar.time.after(queryCalendar.time)
     }
 
     override fun ring(service: AlarmService) {

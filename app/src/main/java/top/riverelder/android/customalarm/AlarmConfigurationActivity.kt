@@ -1,6 +1,7 @@
 package top.riverelder.android.customalarm
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -29,11 +31,33 @@ class AlarmConfigurationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val index = intent.getIntExtra("index", 0)
-        val alarm = CustomAlarmManager.getAlarm(index)
-        if (alarm == null) {
-            Toast.makeText(this, "未找到对应闹铃！", Toast.LENGTH_SHORT).show()
+        val operation = intent.getStringExtra("operation")
+        val index = intent.getIntExtra("index", -1)
+        val alarmTypeId = intent.getStringExtra("alarmTypeId") ?: ""
+
+        fun toastErrorAndFinish(error: String) {
+            Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
             finish()
+        }
+
+        val alarm = when(operation) {
+            "update" -> CustomAlarmManager.getAlarm(index)
+            "add" -> {
+                val alarmType = CustomAlarmManager.getAlarmType(alarmTypeId)
+                if (alarmType == null) {
+                    toastErrorAndFinish("未知闹铃类型ID：$alarmTypeId")
+                    return
+                }
+                alarmType.create(currentTime())
+            }
+            else -> {
+                toastErrorAndFinish( "未知操作：$operation")
+                return
+            }
+        }
+
+        if (alarm == null) {
+            toastErrorAndFinish("未找到对应闹铃！")
             return
         }
 
@@ -51,7 +75,10 @@ class AlarmConfigurationActivity : ComponentActivity() {
                     fun save() {
                         alarm.name = name
                         alarm.properties = properties
-                        CustomAlarmManager.updateAlarm(alarm)
+                        when (operation) {
+                            "update" -> CustomAlarmManager.updateAlarm(alarm)
+                            "add" -> CustomAlarmManager.addAlarm(alarm)
+                        }
                         finish()
                     }
 
@@ -61,6 +88,10 @@ class AlarmConfigurationActivity : ComponentActivity() {
                     }
 
                     fun cancel() {
+                        finish()
+                    }
+
+                    fun remove() {
                         finish()
                     }
 
@@ -92,13 +123,16 @@ class AlarmConfigurationActivity : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Button(onClick = { save() }) {
-                                Text(text = "保存")
+                                Text(text = stringResource(id = R.string.save))
                             }
                             Button(onClick = { reset() }) {
-                                Text(text = "重置")
+                                Text(text = stringResource(id = R.string.reset))
                             }
                             Button(onClick = { cancel() }) {
-                                Text(text = "取消")
+                                Text(text = stringResource(id = R.string.cancel))
+                            }
+                            Button(onClick = { remove() }) {
+                                Text(text = stringResource(id = R.string.remove))
                             }
                         }
                     }

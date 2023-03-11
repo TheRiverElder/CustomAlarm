@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">CustomAlarm</string>
+    <string name="save">Save</string>
+    <string name="reset">Reset</string>
+    <string name="cancel">Cancel</string>
+    <string name="remove">Remove</string>
+    <string name="next_ring">Next ring: ${0}</string>
+    <string name="total_alarm_count">There are ${0} alarms in total</string>
+    <string name="no_alarm">There are no alarm, please add one.</string>
+    <string name="add_alarm">Add Alarm</string>
+    <string name="current_time">Current Time: ${0}</string>
+    <string name="alarm_name">"Alarm Name: "</string>
 </resources>

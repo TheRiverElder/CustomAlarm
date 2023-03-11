@@ -1,11 +1,22 @@
 package top.riverelder.android.customalarm
 
 import top.riverelder.android.customalarm.alarm.Alarm
+import top.riverelder.android.customalarm.alarm.AlarmType
+import top.riverelder.android.customalarm.alarm.impl.DailyAlarmType
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
 
 object CustomAlarmManager {
+
+    private val alarmTypes: MutableMap<String, AlarmType> = HashMap()
+
+    public fun registerAlarmType(alarmType: AlarmType) {
+        alarmTypes[alarmType.id] = alarmType
+    }
+
+    public fun getAlarmType(alarmTypeId: String): AlarmType? = alarmTypes[alarmTypeId]
+
+    public fun getAlarmTypes(): Collection<AlarmType> = alarmTypes.values
+
     private val alarms: MutableList<Alarm> = ArrayList()
 
     public val onAlarmAddedListeners: MutableSet<(Alarm) -> Unit> = HashSet()
@@ -30,6 +41,13 @@ object CustomAlarmManager {
     fun getAlarms(): List<Alarm> = alarms.slice(0 until alarms.size)
 
     fun getAlarm(index: Int): Alarm? = alarms.getOrNull(index)
+
+
+
+    init {
+        registerAlarmType(DailyAlarmType)
+    }
+
 
     fun getNextRing(currentTime: Date, maxDelayMinutes: Int): Pair<Alarm, Date>? {
         var nextRingTime: Date? = null

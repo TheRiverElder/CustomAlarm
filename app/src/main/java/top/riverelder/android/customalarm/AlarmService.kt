@@ -109,7 +109,11 @@ class AlarmService : Service() {
                 scheduleNextRing()
             }
             enqueuedTimerTasks.add(timerTask)
-            timer.schedule(timerTask, nextRingTime)
+            try {
+                timer.schedule(timerTask, nextRingTime)
+            } catch (e: Exception) {
+                Log.e("nextRingTime", nextRingTime.toString())
+            }
         }
 
     }
@@ -120,6 +124,7 @@ class AlarmService : Service() {
             .forEach { Handler(Looper.getMainLooper()).post {
                 it.ring(this)
                 it.scheduled = false
+                CustomAlarmManager.updateAlarm(it)
             } }
     }
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">自定义闹铃</string>
+    <string name="save">保存</string>
+    <string name="reset">重置</string>
+    <string name="cancel">取消</string>
+    <string name="remove">删除</string>
+    <string name="next_ring">下次响铃：${0}</string>
+    <string name="total_alarm_count">共有${0}个闹铃</string>
+    <string name="no_alarm">无闹铃，请添加。</string>
+    <string name="add_alarm">添加闹铃</string>
+    <string name="current_time">当前时间：${0}</string>
+    <string name="alarm_name">"闹铃名称: "</string>
+
+</resources>

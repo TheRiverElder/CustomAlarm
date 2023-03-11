@@ -5,16 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -23,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,30 +31,23 @@ import androidx.compose.ui.unit.dp
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.impl.DailyAlarm
 import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
+import top.riverelder.android.customalarm.ui.viewmodel.AlarmModel
+import top.riverelder.android.customalarm.ui.viewmodel.getModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
 
 class MainActivity : ComponentActivity() {
+
+    private var alarmManagerListener: ((Alarm) -> Unit)? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startAlarmService()
 
-        var alarmManagerListener: ((Alarm) -> Unit)? = null
 
         setContent {
-            var alarms: List<Alarm> by remember { mutableStateOf(CustomAlarmManager.getAlarms()) }
-
-            var listener = alarmManagerListener
-            if (listener == null) {
-                listener = { alarms = CustomAlarmManager.getAlarms() }
-                alarmManagerListener = listener
-            }
-
-            CustomAlarmManager.onAlarmAddedListeners.add(listener)
-            CustomAlarmManager.onAlarmRemovedListeners.add(listener)
-            CustomAlarmManager.onAlarmUpdatedListeners.add(listener)
 
             CustomAlarmTheme {
                 // A surface container using the 'background' color from the theme
@@ -62,14 +55,38 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
+                    var alarms: List<AlarmModel> by remember { mutableStateOf(
+                        with(currentTime()) {
+                            CustomAlarmManager.getAlarms().map { it.getModel(this) }
+                        }
+                    ) }
+
+                    var listener = alarmManagerListener
+                    if (listener == null) {
+                        listener = {
+                            alarms = with(currentTime()) {
+                                CustomAlarmManager.getAlarms().map { it.getModel(this) }
+                            }
+                        }
+                        alarmManagerListener = listener
+                    }
+
+                    CustomAlarmManager.onAlarmAddedListeners.add(listener)
+                    CustomAlarmManager.onAlarmRemovedListeners.add(listener)
+                    CustomAlarmManager.onAlarmUpdatedListeners.add(listener)
+
                     AlarmList(
                         alarms,
                         onClickAdd = {
-                            CustomAlarmManager.addAlarm(createAlarm())
+                            val intent = Intent(this, AlarmConfigurationActivity::class.java)
+                            intent.putExtra("operation", "add")
+                            intent.putExtra("alarmTypeId", "daily")
+                            startActivity(intent)
                         },
                         onClickAlarm = {
-                            val index = it.first
+                            val index = it
                             val intent = Intent(this, AlarmConfigurationActivity::class.java)
+                            intent.putExtra("operation", "update")
                             intent.putExtra("index", index)
                             startActivity(intent)
                         }
@@ -77,6 +94,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        val listener = alarmManagerListener ?: return
+        alarmManagerListener = null
+
+        CustomAlarmManager.onAlarmAddedListeners.remove(listener)
+        CustomAlarmManager.onAlarmRemovedListeners.remove(listener)
+        CustomAlarmManager.onAlarmUpdatedListeners.remove(listener)
+
     }
 
     private var serviceName: ComponentName? = null
@@ -114,22 +143,25 @@ val FONT_FAMILY_SMILEY_SANS = FontFamily(
 )
 
 @Composable
-fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Pair<Int, Alarm>) -> Unit) {
+fun AlarmList(alarms: List<AlarmModel>, onClickAdd: () -> Unit, onClickAlarm: (Int) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         val time = Date()
         Row {
-            Text(text = "当前时间：")
-            Text(text = DATE_TIME_FORMAT.format(time))
+            Text(text = stringResource(id = R.string.current_time).formatBy(DATE_TIME_FORMAT.format(time)))
         }
         Button(onClick = onClickAdd) {
-            Text(text = "增加闹钟")
+            Text(text = stringResource(id = R.string.add_alarm))
         }
-        Text(text = "共${alarms.size}个闹钟")
+        Text(
+            text = if (alarms.isEmpty()) stringResource(id = R.string.no_alarm)
+            else (stringResource(id = R.string.total_alarm_count).formatBy(alarms.size))
+        )
         LazyColumn(modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp, 2.dp)) {
+            .padding(5.dp, 2.dp)
+        ) {
             itemsIndexed(alarms) { index, alarm ->
-                Row(Modifier.clickable { onClickAlarm(Pair(index, alarm)) }) {
+                Row(Modifier.clickable { onClickAlarm(index) }) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = "alarm",
@@ -146,14 +178,12 @@ fun AlarmList(alarms: List<Alarm>, onClickAdd: () -> Unit, onClickAlarm: (Pair<I
                             )
                         }
                         Row {
-                            val nextRingTime = alarm.followingRingTime(time)
                             Text(
-                                text = "下次响铃：",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Gray,
-                            )
-                            Text(
-                                text = if (nextRingTime != null) DATE_TIME_FORMAT.format(nextRingTime) else "N/A",
+                                text = stringResource(id = R.string.next_ring).formatBy(
+                                    if (alarm.followingRingTime != null)
+                                        DATE_TIME_FORMAT.format(alarm.followingRingTime)
+                                    else "N/A"
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.Gray,
                             )
@@ -176,7 +206,9 @@ val TIME_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
 )
 @Composable
 fun DefaultPreview() {
-    var alarms by remember { mutableStateOf(ArrayList<Alarm>().also { it.add(createAlarm()) }) }
+    val alarms by remember { mutableStateOf(with(currentTime()) {
+        CustomAlarmManager.getAlarms().map { it.getModel(this) }
+    }) }
 
     CustomAlarmTheme {
         Surface(
@@ -186,7 +218,7 @@ fun DefaultPreview() {
             AlarmList(
                 alarms,
                 onClickAdd = {
-                    alarms = ArrayList(alarms).also { it.add(createAlarm()) }
+                    CustomAlarmManager.addAlarm(createTestAlarm())
                 },
                 onClickAlarm = {  }
             )
@@ -194,7 +226,7 @@ fun DefaultPreview() {
     }
 }
 
-fun createAlarm(): Alarm {
+fun createTestAlarm(): Alarm {
     val currentTime = Date()
     val calendar = Calendar.getInstance()
     calendar.time = currentTime
