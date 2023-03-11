@@ -92,6 +92,7 @@ class AlarmConfigurationActivity : ComponentActivity() {
                     }
 
                     fun remove() {
+                        CustomAlarmManager.removeAlarm(alarm)
                         finish()
                     }
 
