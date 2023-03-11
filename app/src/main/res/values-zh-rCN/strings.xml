@@ -11,5 +11,6 @@
     <string name="add_alarm">添加闹铃</string>
     <string name="current_time">当前时间：${}</string>
     <string name="alarm_name">"闹铃名称: "</string>
+    <string name="notification_hint">该消息栏保证服务运行在后台</string>
 
 </resources>

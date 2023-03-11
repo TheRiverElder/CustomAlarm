@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Handler
@@ -15,10 +16,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import top.riverelder.android.customalarm.alarm.Alarm
-import java.sql.Time
-import java.text.DateFormat
 import java.util.*
-import java.util.Calendar.YEAR
 import kotlin.collections.HashSet
 import kotlin.concurrent.timerTask
 
@@ -34,7 +32,8 @@ class AlarmService : Service() {
         return AlarmServiceBinder()
     }
 
-    private val alarmManagerMutatedListener: (Alarm) -> Unit = {
+    private val alarmManagerMutatedListener: (Alarm) -> Unit = { alarm ->
+        Log.d(this::class.simpleName + ".alarmManagerMutatedListener", alarm.name)
         enqueuedTimerTasks.forEach { it.cancel() }
         enqueuedTimerTasks.clear()
         scheduleNextRing()
@@ -72,9 +71,9 @@ class AlarmService : Service() {
 
         val notification = Notification.Builder(this, channel.id)
             .setLargeIcon(BitmapFactory.decodeResource(this.resources, R.mipmap.ic_launcher))
-            .setContentTitle("Custom Alarm")
+            .setContentTitle(getString(R.string.app_name))
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentText("该提示保证闹钟能正确运行")
+            .setContentText(getString(R.string.notification_hint))
             .setWhen(System.currentTimeMillis())
             .build()
         startForeground(1000, notification)
@@ -101,7 +100,7 @@ class AlarmService : Service() {
         synchronized(this) {
             nextAlarm.scheduled = true
 
-            Log.d("nextRingTime", "$nextRingTime == ${nextRingTime.time / (1000L * 60 * 60 * 24 * 365)} == year ${nextRingTime.calendar.get(YEAR)}")
+            Log.d("CustomAlarmManager.scheduleNextRing", DATE_TIME_FORMAT.format(nextRingTime))
 
             val timerTask = timerTask {
                 enqueuedTimerTasks.remove(this)
@@ -112,7 +111,7 @@ class AlarmService : Service() {
             try {
                 timer.schedule(timerTask, nextRingTime)
             } catch (e: Exception) {
-                Log.e("nextRingTime", nextRingTime.toString())
+                Log.e("CustomAlarmManager.scheduleNextRing", nextRingTime.time.toString())
             }
         }
 
@@ -122,6 +121,7 @@ class AlarmService : Service() {
         CustomAlarmManager.getAlarms()
             .filter { it.shouldRing(time) }
             .forEach { Handler(Looper.getMainLooper()).post {
+                Log.i("CustomAlarmManager.ringAlarms", it.name)
                 it.ring(this)
                 it.scheduled = false
                 CustomAlarmManager.updateAlarm(it)

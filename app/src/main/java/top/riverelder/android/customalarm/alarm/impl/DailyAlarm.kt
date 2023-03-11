@@ -2,6 +2,7 @@ package top.riverelder.android.customalarm.alarm.impl
 
 import android.app.TimePickerDialog
 import android.content.Context
+import android.media.RingtoneManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -31,7 +32,7 @@ object DailyAlarmType : AlarmType {
     override val id: String
         get() = "daily"
 
-    override fun create(initialTime: Date): DailyAlarm = DailyAlarm()
+    override fun create(initialTime: Date): DailyAlarm = DailyAlarm().also { it.setByTime(initialTime) }
 
     @Composable
     override fun AlarmConfigurationView(
@@ -49,7 +50,6 @@ object DailyAlarmType : AlarmType {
             dailyTimeMinute: Int = previousTimeMinute,
             maxDelayMinutes: Int = previousMaxDelayMinutes,
         ) {
-            Log.d("maxDelayMinutes", maxDelayMinutes.toString())
             onChange(
                 bundleOf(
                     "dailyTime" to getTime(hour = dailyTimeHour, minute = dailyTimeMinute).time,
@@ -184,6 +184,13 @@ class DailyAlarm : Alarm {
     override fun ring(service: AlarmService) {
         Toast.makeText(service, "醒醒！", Toast.LENGTH_SHORT).show()
         Log.d("RING", "闹铃响了！")
+        val ringtone = RingtoneManager.getRingtone(
+            service,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        ) ?: return
+        if (!ringtone.isPlaying) {
+            ringtone.play()
+        }
     }
 
     override var properties: Bundle
