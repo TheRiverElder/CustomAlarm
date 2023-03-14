@@ -13,6 +13,11 @@ interface Alarm {
     val type: AlarmType
 
     /**
+     * 该闹铃的唯一标识符，不可与别的闹铃重复
+     */
+    val uid: Int
+
+    /**
      * 该闹铃的名称
      */
     var name: String

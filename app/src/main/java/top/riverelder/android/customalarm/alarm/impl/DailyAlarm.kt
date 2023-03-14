@@ -32,7 +32,10 @@ object DailyAlarmType : AlarmType {
     override val id: String
         get() = "daily"
 
-    override fun create(initialTime: Date): DailyAlarm = DailyAlarm().also { it.setByTime(initialTime) }
+    override fun create(uid: Int, initialTime: Date?): DailyAlarm =
+        DailyAlarm(uid).also { initialTime?.let { it1 -> it.setByTime(it1) } }
+
+    override fun restore(uid: Int): DailyAlarm = DailyAlarm(uid)
 
     @Composable
     override fun AlarmConfigurationView(
@@ -95,7 +98,9 @@ object DailyAlarmType : AlarmType {
 
 }
 
-class DailyAlarm : Alarm {
+class DailyAlarm(
+    override val uid: Int
+) : Alarm {
 
     override val type: AlarmType
         get() = DailyAlarmType

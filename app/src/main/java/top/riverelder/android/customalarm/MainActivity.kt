@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PersistableBundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -40,7 +41,17 @@ import java.util.*
 
 class MainActivity : ComponentActivity() {
 
-    private var alarmManagerListener: ((Alarm) -> Unit)? = null
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
+        super.onSaveInstanceState(outState, outPersistentState)
+        CustomAlarmManager.saveTo(dataDir)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        CustomAlarmManager.loadAlarmFrom(dataDir)
+    }
+
+    private var alarmManagerListener: ((CustomAlarmManager) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,9 +82,7 @@ class MainActivity : ComponentActivity() {
                         alarmManagerListener = listener
                     }
 
-                    CustomAlarmManager.onAlarmAddedListeners.add(listener)
-                    CustomAlarmManager.onAlarmRemovedListeners.add(listener)
-                    CustomAlarmManager.onAlarmUpdatedListeners.add(listener)
+                    CustomAlarmManager.onManagerUpdatedListeners.add(listener)
 
                     AlarmList(
                         alarms,
@@ -84,10 +93,10 @@ class MainActivity : ComponentActivity() {
                             startActivity(intent)
                         },
                         onClickAlarm = {
-                            val index = it
+                            val uid = it
                             val intent = Intent(this, AlarmConfigurationActivity::class.java)
                             intent.putExtra("operation", "update")
-                            intent.putExtra("index", index)
+                            intent.putExtra("uid", uid)
                             startActivity(intent)
                         }
                     )
@@ -102,9 +111,7 @@ class MainActivity : ComponentActivity() {
         val listener = alarmManagerListener ?: return
         alarmManagerListener = null
 
-        CustomAlarmManager.onAlarmAddedListeners.remove(listener)
-        CustomAlarmManager.onAlarmRemovedListeners.remove(listener)
-        CustomAlarmManager.onAlarmUpdatedListeners.remove(listener)
+        CustomAlarmManager.onManagerUpdatedListeners.remove(listener)
 
     }
 
@@ -161,7 +168,7 @@ fun AlarmList(alarms: List<AlarmModel>, onClickAdd: () -> Unit, onClickAlarm: (I
             .padding(5.dp, 2.dp)
         ) {
             itemsIndexed(alarms) { index, alarm ->
-                Row(Modifier.clickable { onClickAlarm(index) }) {
+                Row(Modifier.clickable { onClickAlarm(alarm.uid) }) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = "alarm",
@@ -233,7 +240,7 @@ fun createTestAlarm(): Alarm {
     calendar.add(Calendar.SECOND, 1)
     val time = calendar.time
 
-    return DailyAlarm().also {
+    return DailyAlarm(0).also {
         it.name = "起床闹钟"
         it.dailyTime = time
     }

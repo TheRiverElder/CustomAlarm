@@ -32,7 +32,7 @@ class AlarmConfigurationActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val operation = intent.getStringExtra("operation")
-        val index = intent.getIntExtra("index", -1)
+        val uid = intent.getIntExtra("uid", -1)
         val alarmTypeId = intent.getStringExtra("alarmTypeId") ?: ""
 
         fun toastErrorAndFinish(error: String) {
@@ -41,14 +41,14 @@ class AlarmConfigurationActivity : ComponentActivity() {
         }
 
         val alarm = when(operation) {
-            "update" -> CustomAlarmManager.getAlarm(index)
+            "update" -> CustomAlarmManager.getAlarm(uid)
             "add" -> {
                 val alarmType = CustomAlarmManager.getAlarmType(alarmTypeId)
                 if (alarmType == null) {
                     toastErrorAndFinish("未知闹铃类型ID：$alarmTypeId")
                     return
                 }
-                alarmType.create(currentTime())
+                alarmType.create(CustomAlarmManager.nextUid(), currentTime())
             }
             else -> {
                 toastErrorAndFinish( "未知操作：$operation")

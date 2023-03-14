@@ -32,20 +32,21 @@ class AlarmService : Service() {
         return AlarmServiceBinder()
     }
 
-    private val alarmManagerMutatedListener: (Alarm) -> Unit = { alarm ->
-        Log.d(this::class.simpleName + ".alarmManagerMutatedListener", alarm.name)
+    private val alarmManagerMutatedListener: (CustomAlarmManager) -> Unit = {
+        Log.d(this::class.simpleName + ".alarmManagerMutatedListener", "manager")
         enqueuedTimerTasks.forEach { it.cancel() }
         enqueuedTimerTasks.clear()
         scheduleNextRing()
+        CustomAlarmManager.saveTo(dataDir)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         protectRunning()
         scheduleNextRing()
+        
+        CustomAlarmManager.onManagerUpdatedListeners.add(alarmManagerMutatedListener)
 
-        CustomAlarmManager.onAlarmUpdatedListeners.add(alarmManagerMutatedListener)
-        CustomAlarmManager.onAlarmAddedListeners.add(alarmManagerMutatedListener)
-        CustomAlarmManager.onAlarmRemovedListeners.add(alarmManagerMutatedListener)
+        CustomAlarmManager.loadFrom(dataDir)
 
         val filter = IntentFilter() //创建意图过滤器对象
         filter.addAction(Intent.ACTION_TIME_TICK) //为接收器指定action，使之用于接收同action的广播
@@ -56,11 +57,20 @@ class AlarmService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        cleanup()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        cleanup()
+    }
+
+    private fun cleanup() {
         releaseRunning()
 
-        CustomAlarmManager.onAlarmUpdatedListeners.remove(alarmManagerMutatedListener)
-        CustomAlarmManager.onAlarmAddedListeners.remove(alarmManagerMutatedListener)
-        CustomAlarmManager.onAlarmRemovedListeners.remove(alarmManagerMutatedListener)
+        CustomAlarmManager.onManagerUpdatedListeners.remove(alarmManagerMutatedListener)
+
+        CustomAlarmManager.saveTo(dataDir)
     }
 
     private fun protectRunning() {
