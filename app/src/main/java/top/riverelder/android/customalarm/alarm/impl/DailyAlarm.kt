@@ -21,6 +21,8 @@ import top.riverelder.android.customalarm.*
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.AlarmType
 import top.riverelder.android.customalarm.ui.components.DigitInput
+import java.io.DataInput
+import java.io.DataOutput
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Calendar.*
@@ -34,8 +36,6 @@ object DailyAlarmType : AlarmType {
 
     override fun create(uid: Int, initialTime: Date?): DailyAlarm =
         DailyAlarm(uid).also { initialTime?.let { it1 -> it.setByTime(it1) } }
-
-    override fun restore(uid: Int): DailyAlarm = DailyAlarm(uid)
 
     @Composable
     override fun AlarmConfigurationView(
@@ -208,4 +208,14 @@ class DailyAlarm(
             maxDelayMinutes = bundle.getInt("maxDelayMinutes", maxDelayMinutes)
         }
 
+
+    override fun restore(input: DataInput) {
+        dailyTime = Date(input.readLong())
+        maxDelayMinutes = input.readInt()
+    }
+
+    override fun save(output: DataOutput) {
+        output.writeLong(dailyTime.time)
+        output.writeInt(maxDelayMinutes)
+    }
 }

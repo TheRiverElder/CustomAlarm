@@ -23,7 +23,7 @@ interface AlarmType {
      * 重建一个闹铃
      * @param uid 该闹铃的uid，唯一标识，不可重复
      */
-    fun restore(uid: Int): Alarm
+//    fun restore(uid: Int): Alarm
 
 
     /**

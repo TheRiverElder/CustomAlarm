@@ -1,9 +1,11 @@
 package top.riverelder.android.customalarm
 
+import android.os.Bundle
 import android.util.Log
 import top.riverelder.android.customalarm.alarm.Alarm
 import top.riverelder.android.customalarm.alarm.AlarmType
 import top.riverelder.android.customalarm.alarm.impl.DailyAlarmType
+import java.io.DataInput
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
@@ -57,7 +59,6 @@ object CustomAlarmManager {
     fun getAlarm(uid: Int): Alarm? = alarms.getOrDefault(uid, null)
 
 
-
     init {
         registerAlarmType(DailyAlarmType)
     }
@@ -79,49 +80,65 @@ object CustomAlarmManager {
             }
         }
 
-        return if (nextRingTime != null && nextAlarm != null) Pair(nextAlarm, nextRingTime) else null
+        return if (nextRingTime != null && nextAlarm != null) Pair(
+            nextAlarm,
+            nextRingTime
+        ) else null
     }
 
     fun saveAlarmTo(file: File, alarm: Alarm) {
         DataOutputStream(file.outputStream()).use { output ->
             output.writeUTF(alarm.type.id)
             output.writeInt(alarm.uid)
+            output.writeUTF(alarm.name)
+            alarm.save(output)
         }
     }
 
     fun loadAlarmFrom(file: File): Alarm {
         DataInputStream(file.inputStream()).use { input ->
             val alarmTypeId = input.readUTF()
-            val alarmType = getAlarmType(alarmTypeId) ?: throw Exception("Invalid alarm type id: $alarmTypeId")
+            val alarmType =
+                getAlarmType(alarmTypeId) ?: throw Exception("Invalid alarm type id: $alarmTypeId")
             val uid = input.readInt()
-            val alarm = alarmType.restore(uid)
+            val alarm = alarmType.create(uid)
+            val name = input.readUTF()
+            alarm.name = name
+            alarm.restore(input)
             return alarm
         }
     }
 
     fun saveTo(directory: File) {
+        var counter = 0
         for (alarm in alarms.values) {
             saveAlarmTo(File(directory, alarm.uid.toString()), alarm)
+            counter++
         }
+        Log.d(this::class.simpleName, "saved $counter")
     }
 
     fun loadFrom(directory: File) {
-        try {
-            var uidCounter = 0
-            for (file in (directory.listFiles() ?: return)) {
-                if (!file.isFile) continue
+        var uidCounter = 0
+        var counter = 0
+        for (file in (directory.listFiles() ?: return)) {
+            if (!file.isFile) continue
 
-                val alarm =loadAlarmFrom(file)
+            try {
+                val alarm = loadAlarmFrom(file)
                 alarms[alarm.uid] = alarm
                 if (alarm.uid > uidCounter) {
                     uidCounter = alarm.uid
                 }
+                counter++
+            } catch (e: Exception) {
+                Log.e("loadFrom", e.javaClass.name + " " + e.message.toString())
             }
-            this.uidCounter = uidCounter + 1
-
-            onManagerUpdatedListeners.forEach { it(this) }
-        } catch (e: Exception) {
-            Log.e("loadFrom", e.message.toString())
         }
+        this.uidCounter = uidCounter + 1
+
+        onManagerUpdatedListeners.forEach { it(this) }
+        Log.d(this::class.simpleName, "loaded $counter")
+
     }
 }

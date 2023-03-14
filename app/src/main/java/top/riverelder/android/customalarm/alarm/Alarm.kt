@@ -3,6 +3,8 @@ package top.riverelder.android.customalarm.alarm
 import android.os.Bundle
 import androidx.annotation.IntRange
 import top.riverelder.android.customalarm.AlarmService
+import java.io.DataInput
+import java.io.DataOutput
 import java.util.Date
 
 interface Alarm {
@@ -59,6 +61,18 @@ interface Alarm {
      * 实行响铃行为，后期会加入复杂的响铃行为，为了方便，暂不使用组合，而是继承
      */
     fun ring(service: AlarmService)
+
+    /**
+     * 从保存的数据中复原该闹铃
+     * @param input 输入数据
+     */
+    fun restore(input: DataInput)
+
+    /**
+     * 将该闹铃保存到数据输出中
+     * @param output 输出数据
+     */
+    fun save(output: DataOutput)
 
     /**
      * 用于设置获取读取设置，不一定真的有这一个field，只是定义了getter和setter
