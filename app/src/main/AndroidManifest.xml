@@ -38,6 +38,7 @@
 
         <service android:name=".AlarmService"
             android:exported="true"
+            android:stopWithTask="false"
             />
     </application>
 
