@@ -8,16 +8,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import top.riverelder.android.customalarm.alarm.Alarm
+import android.widget.Toast
+import java.io.File
 import java.util.*
-import kotlin.collections.HashSet
 import kotlin.concurrent.timerTask
 
 
@@ -32,35 +31,51 @@ class AlarmService : Service() {
         return AlarmServiceBinder()
     }
 
+    val alarmsDir: File
+        get() = File(dataDir, "alarms")
+
     private val alarmManagerMutatedListener: (CustomAlarmManager) -> Unit = {
         Log.d(this::class.simpleName + ".alarmManagerMutatedListener", "manager")
         enqueuedTimerTasks.forEach { it.cancel() }
         enqueuedTimerTasks.clear()
         scheduleNextRing()
-        CustomAlarmManager.saveTo(dataDir)
+        CustomAlarmManager.saveTo(alarmsDir)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        protectRunning()
-        scheduleNextRing()
-        
-        CustomAlarmManager.onManagerUpdatedListeners.add(alarmManagerMutatedListener)
+        Toast.makeText(this, "闹铃服务器启动", Toast.LENGTH_SHORT).show()
 
-        CustomAlarmManager.loadFrom(dataDir)
+        return START_STICKY
+    }
 
-        val filter = IntentFilter() //创建意图过滤器对象
-        filter.addAction(Intent.ACTION_TIME_TICK) //为接收器指定action，使之用于接收同action的广播
-        registerReceiver(MinuteBroadcastReceiver(), filter) //动态注册广播接收器
+    override fun onCreate() {
+        Toast.makeText(this, "闹铃服务器创建", Toast.LENGTH_SHORT).show()
+        try {
+            protectRunning()
+            scheduleNextRing()
 
-        return super.onStartCommand(intent, flags, startId)
+            CustomAlarmManager.onManagerUpdatedListeners.add(alarmManagerMutatedListener)
+
+            CustomAlarmManager.loadFrom(alarmsDir)
+
+            val filter = IntentFilter() //创建意图过滤器对象
+            filter.addAction(Intent.ACTION_TIME_TICK) //为接收器指定action，使之用于接收同action的广播
+            registerReceiver(MinuteBroadcastReceiver(), filter) //动态注册广播接收器
+        } catch (e: Exception) {
+            val exceptionMessage = e.javaClass.name + " " + e.message.toString()
+            Log.e(this::class.simpleName, exceptionMessage)
+            Toast.makeText(this, "闹铃服务器创建异常：$exceptionMessage", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroy() {
+        Toast.makeText(this, "闹铃服务器销毁", Toast.LENGTH_SHORT).show()
         super.onDestroy()
         cleanup()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        Toast.makeText(this, "闹铃服务器移除", Toast.LENGTH_SHORT).show()
         super.onTaskRemoved(rootIntent)
         cleanup()
     }
@@ -70,11 +85,11 @@ class AlarmService : Service() {
 
         CustomAlarmManager.onManagerUpdatedListeners.remove(alarmManagerMutatedListener)
 
-        CustomAlarmManager.saveTo(dataDir)
+        CustomAlarmManager.saveTo(alarmsDir)
     }
 
     private fun protectRunning() {
-        val channel = NotificationChannel(packageName, "ForegroundService", NotificationManager.IMPORTANCE_NONE)
+        val channel = NotificationChannel(packageName, "ForegroundService", NotificationManager.IMPORTANCE_LOW)
         channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         service.createNotificationChannel(channel)

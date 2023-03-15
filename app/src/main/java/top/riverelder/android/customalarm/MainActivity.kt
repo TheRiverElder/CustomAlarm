@@ -34,22 +34,13 @@ import top.riverelder.android.customalarm.alarm.impl.DailyAlarm
 import top.riverelder.android.customalarm.ui.theme.CustomAlarmTheme
 import top.riverelder.android.customalarm.ui.viewmodel.AlarmModel
 import top.riverelder.android.customalarm.ui.viewmodel.getModel
+import java.io.File
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
 
 class MainActivity : ComponentActivity() {
-
-    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
-        super.onSaveInstanceState(outState, outPersistentState)
-        CustomAlarmManager.saveTo(dataDir)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        CustomAlarmManager.loadAlarmFrom(dataDir)
-    }
 
     private var alarmManagerListener: ((CustomAlarmManager) -> Unit)? = null
 
@@ -121,7 +112,7 @@ class MainActivity : ComponentActivity() {
 
     private fun startAlarmService() {
         val intent = Intent(this, AlarmService::class.java)
-        startService(intent)
+        startForegroundService(intent)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
@@ -129,7 +120,7 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             if (binder !is AlarmService.AlarmServiceBinder) return
 
-            Toast.makeText(this@MainActivity, "连接到服务", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this@MainActivity, "连接到服务", Toast.LENGTH_SHORT).show()
             service = binder.service
             serviceName = name
         }
@@ -137,7 +128,7 @@ class MainActivity : ComponentActivity() {
         override fun onServiceDisconnected(name: ComponentName?) {
             if (serviceName == null || service == null || serviceName != name) return
 
-            Toast.makeText(this@MainActivity, "断开连接服务", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this@MainActivity, "断开连接服务", Toast.LENGTH_SHORT).show()
             service = null
             serviceName = null
         }

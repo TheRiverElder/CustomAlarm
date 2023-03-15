@@ -110,6 +110,11 @@ object CustomAlarmManager {
     }
 
     fun saveTo(directory: File) {
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) return
+        }
+        if (!directory.isDirectory) return
+
         var counter = 0
         for (alarm in alarms.values) {
             saveAlarmTo(File(directory, alarm.uid.toString()), alarm)
@@ -121,19 +126,23 @@ object CustomAlarmManager {
     fun loadFrom(directory: File) {
         var uidCounter = 0
         var counter = 0
-        for (file in (directory.listFiles() ?: return)) {
-            if (!file.isFile) continue
+        try {
+            for (file in (directory.listFiles() ?: return)) {
+                if (!file.isFile) continue
 
-            try {
-                val alarm = loadAlarmFrom(file)
-                alarms[alarm.uid] = alarm
-                if (alarm.uid > uidCounter) {
-                    uidCounter = alarm.uid
+                try {
+                    val alarm = loadAlarmFrom(file)
+                    alarms[alarm.uid] = alarm
+                    if (alarm.uid > uidCounter) {
+                        uidCounter = alarm.uid
+                    }
+                    counter++
+                } catch (e: Exception) {
+                    Log.e("loadFrom", e.javaClass.name + " " + e.message.toString())
                 }
-                counter++
-            } catch (e: Exception) {
-                Log.e("loadFrom", e.javaClass.name + " " + e.message.toString())
             }
+        } catch (e: Exception) {
+            Log.e("loadFrom", e.javaClass.name + " " + e.message.toString())
         }
         this.uidCounter = uidCounter + 1
 
