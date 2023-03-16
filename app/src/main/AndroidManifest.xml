@@ -40,6 +40,13 @@
             android:exported="true"
             android:stopWithTask="false"
             />
+
+        <receiver android:name=".AlarmTickBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_TICK"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

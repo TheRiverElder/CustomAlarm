@@ -81,7 +81,6 @@ class MainActivity : ComponentActivity() {
                             val intent = Intent(this, AlarmConfigurationActivity::class.java)
                             intent.putExtra("operation", "add")
                             intent.putExtra("alarmTypeId", "daily")
-                            startActivity(intent)
                         },
                         onClickAlarm = {
                             val uid = it
